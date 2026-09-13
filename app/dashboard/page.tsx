@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [activeView, setActiveView] = useState<View>("Dashboard");
   const [simulationRun, setSimulationRun] = useState(false);
   const [fixApplied, setFixApplied] = useState(false);
+  const [retestComplete, setRetestComplete] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("breakwise-user");
@@ -159,7 +160,10 @@ export default function DashboardPage() {
                 simulationRun={simulationRun}
                 fixApplied={fixApplied}
                 onRun={() => setSimulationRun(true)}
-                onFix={() => setFixApplied(true)}
+                onFix={() => {
+  setFixApplied(true);
+  setActiveView("Recovery Plans");
+}}
               />
             )}
 
@@ -384,19 +388,167 @@ function RecoveryPlansView({
   business: Business | null;
   fixApplied: boolean;
 }) {
+  const [retested, setRetested] = useState(false);
+
   if (!business || !fixApplied) {
-    return <Empty title="No recovery plans published yet" text="Run a scenario and apply a recovery action to publish one." />;
+    return (
+      <Empty
+        title="No recovery plans published yet"
+        text="Run a scenario and apply a recovery action to publish one."
+      />
+    );
   }
 
   return (
-    <article className="max-w-2xl rounded-2xl border border-emerald-200 bg-white p-7 shadow-sm">
-      <p className="text-sm font-semibold text-emerald-600">PUBLISHED RECOVERY PLAN</p>
-      <h1 className="mt-2 text-2xl font-bold">Payment Failure Recovery Plan</h1>
-      <p className="mt-3 text-sm text-slate-500">
-        Backup Payment Processor added for {business.name}.
+    <section className="max-w-4xl">
+      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-600">
+        Published recovery plan
       </p>
-      <p className="mt-5 text-sm font-semibold text-emerald-700">✓ Published successfully</p>
-    </article>
+      <h1 className="mt-2 text-3xl font-bold">
+        Payment Failure Recovery Plan
+      </h1>
+      <p className="mt-2 text-slate-500">
+        A recovery plan has been generated for {business.name}.
+      </p>
+
+      <div className="mt-7 grid gap-5 sm:grid-cols-3">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Status
+          </p>
+          <p className="mt-3 font-bold text-emerald-600">✓ Published</p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Impact
+          </p>
+          <p className="mt-3 font-bold">
+            HIGH <span className="text-slate-400">→</span>{" "}
+            <span className="text-emerald-600">MEDIUM</span>
+          </p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Recovery owner
+          </p>
+          <p className="mt-3 font-bold">Business Operations</p>
+        </article>
+      </div>
+
+      <article className="mt-5 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+        <p className="text-sm font-semibold text-blue-600">RECOMMENDED ACTIONS</p>
+
+        <div className="mt-6 space-y-5">
+          <RecoveryAction
+            number="01"
+            title="Add Backup Payment Processor"
+            text="Route payment requests through an alternate payment provider if the primary provider is unavailable."
+          />
+          <RecoveryAction
+            number="02"
+            title="Enable Manual Payment Capture"
+            text="Allow the operations team to record payments manually during a temporary outage."
+          />
+          <RecoveryAction
+            number="03"
+            title="Test the Fallback Checkout Flow"
+            text="Run a controlled test to make sure customers can complete orders using the backup processor."
+          />
+          <RecoveryAction
+            number="04"
+            title="Assign a Payment Failure Owner"
+            text="Business Operations owns the incident response and communicates progress to the team."
+          />
+        </div>
+      </article>
+
+      <article className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-7">
+        <p className="text-sm font-semibold text-blue-700">BEFORE VS AFTER</p>
+
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <div className="rounded-xl bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-rose-500">
+              Before
+            </p>
+            <p className="mt-3 text-sm leading-7 text-slate-700">
+              Payment Provider
+              <br />↓
+              <br />
+              Payment System
+              <br />↓
+              <br />
+              Checkout
+              <br />↓
+              <br />
+              Orders
+              <br />↓
+              <br />
+              Revenue
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">
+              After
+            </p>
+            <p className="mt-3 text-sm leading-7 text-slate-700">
+              Payment Provider
+              <br />↓
+              <br />
+              Backup Payment Processor
+              <br />↓
+              <br />
+              Checkout
+              <br />↓
+              <br />
+              Orders
+              <br />↓
+              <br />
+              Revenue
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <button
+          onClick={() => setRetested(true)}
+          className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          Re-test same scenario
+        </button>
+
+        {retested && (
+          <p className="text-sm font-semibold text-emerald-600">
+            ✓ Re-test complete — backup processor reduced impact to MEDIUM.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function RecoveryAction({
+  number,
+  title,
+  text,
+}: {
+  number: string;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="flex gap-4">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-blue-50 text-sm font-bold text-blue-600">
+        {number}
+      </span>
+      <div>
+        <h3 className="font-bold text-slate-800">{title}</h3>
+        <p className="mt-1 text-sm leading-6 text-slate-500">{text}</p>
+      </div>
+    </div>
   );
 }
 

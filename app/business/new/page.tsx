@@ -1,12 +1,39 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+
+type UploadedFile = {
+  name: string;
+  size: number;
+  type: string;
+};
 
 export default function CreateBusinessPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [businessName, setBusinessName] = useState("");
   const [industry, setIndustry] = useState("");
+  const [files, setFiles] = useState<UploadedFile[]>([]);
+
+  function handleFiles(selectedFiles: FileList | null) {
+    if (!selectedFiles) return;
+
+    const newFiles = Array.from(selectedFiles).map((file) => ({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    }));
+
+    setFiles((currentFiles) => [...currentFiles, ...newFiles].slice(0, 5));
+  }
+
+  function removeFile(fileName: string) {
+    setFiles((currentFiles) =>
+      currentFiles.filter((file) => file.name !== fileName)
+    );
+  }
 
   function createBusiness(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -18,6 +45,7 @@ export default function CreateBusinessPage() {
       JSON.stringify({
         name: businessName.trim(),
         industry: industry.trim() || "Not specified",
+        files,
       })
     );
 
@@ -38,11 +66,13 @@ export default function CreateBusinessPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
             Step 1 of 3
           </p>
+
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
             Create your business
           </h1>
+
           <p className="mt-3 text-slate-500">
-            Start with the basic details. We will add dependencies next.
+            Add basic details and any documents that help describe your business.
           </p>
 
           <form className="mt-8 space-y-6" onSubmit={createBusiness}>
@@ -70,6 +100,66 @@ export default function CreateBusinessPage() {
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               />
             </label>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-700">
+                  Upload business files
+                </span>
+                <span className="text-xs text-slate-400">Optional · up to 5 files</span>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.csv,.xls,.xlsx,.png,.jpg,.jpeg"
+                className="hidden"
+                onChange={(event) => handleFiles(event.target.files)}
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full flex-col items-center rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/50 px-6 py-8 text-center transition hover:border-blue-400 hover:bg-blue-50"
+              >
+                <span className="text-2xl text-blue-600">↑</span>
+                <span className="mt-2 text-sm font-semibold text-blue-700">
+                  Choose files from your computer
+                </span>
+                <span className="mt-1 text-xs text-slate-500">
+                  PDF, DOCX, CSV, XLSX, PNG, or JPG
+                </span>
+              </button>
+
+              {files.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {files.map((file) => (
+                    <div
+                      key={file.name}
+                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-700">
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeFile(file.name)}
+                        className="ml-4 text-sm font-semibold text-rose-500 hover:text-rose-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <button
               type="submit"
